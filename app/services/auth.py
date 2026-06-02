@@ -1,7 +1,16 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password, slugify_name
-from app.exceptions import EmailAlreadyExistsError, FirmNameAlreadyExistsError
+from app.core.security import (
+    create_access_token,
+    hash_password,
+    slugify_name,
+    verify_password,
+)
+from app.exceptions import (
+    EmailAlreadyExistsError,
+    FirmNameAlreadyExistsError,
+    InvalidCredentialsError,
+)
 from app.models.firm import Firm
 from app.models.user import User
 from app.repositories.firm import FirmRepository
@@ -38,23 +47,18 @@ class RegistrationService:
         If either operation fails, database is rolled back.
         """
         try:
-            # Validate uniqueness of Email using Repository
             if await UserRepository.get_by_email(db, request.admin_user.email):
                 raise EmailAlreadyExistsError(request.admin_user.email)
 
-            # Validate uniqueness of Firm Name using Repository
             if await FirmRepository.get_by_name(db, request.name):
                 raise FirmNameAlreadyExistsError(request.name)
 
-            # Generate slug
             slug = await _generate_unique_slug(db, request.name)
 
-            # Create the Firm using Repository
             db_firm = await FirmRepository.create(
                 db, name=request.name, slug=slug
             )
 
-            # Hash password and create Admin User using Repository
             hashed_pw = hash_password(request.admin_user.password)
             db_user = await UserRepository.create(
                 db,
@@ -65,15 +69,33 @@ class RegistrationService:
                 firm_id=db_firm.id,
             )
 
-            # Commit the transaction
             await db.commit()
 
         except Exception:
             await db.rollback()
             raise
 
-        # Refresh objects to load generated relationships/IDs post-commit
         await db.refresh(db_firm)
         await db.refresh(db_user)
 
         return db_firm, db_user
+
+
+class LoginService:
+    """Service class for handling user login and token issuance."""
+
+    @staticmethod
+    async def login(
+        db: AsyncSession,
+        email: str,
+        password: str,
+    ) -> str:
+        """Validate credentials and return a signed JWT access token.
+
+        Raises InvalidCredentialsError if email or password is wrong.
+        """
+        user = await UserRepository.get_by_email(db, email)
+        if user is None or not verify_password(password, user.hashed_password):
+            raise InvalidCredentialsError()
+
+        return create_access_token(subject=user.id, firm_id=user.firm_id)

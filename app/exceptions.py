@@ -18,3 +18,17 @@ class FirmNameAlreadyExistsError(AppError):
     def __init__(self, name: str):
         super().__init__(f"Firm name '{name}' is already registered.")
         self.name = name
+
+
+class InvalidCredentialsError(AppError):
+    """Raised when login credentials are incorrect."""
+
+    def __init__(self) -> None:
+        super().__init__("Incorrect email or password.")
+
+
+class InactiveUserError(AppError):
+    """Raised when an inactive user attempts to authenticate."""
+
+    def __init__(self) -> None:
+        super().__init__("User account is inactive.")

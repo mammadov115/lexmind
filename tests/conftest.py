@@ -74,3 +74,58 @@ async def client(
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
     app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# Helpers for multi-tenant tests
+# ---------------------------------------------------------------------------
+
+_REGISTER_URL = "/api/v1/auth/register"
+_LOGIN_URL = "/api/v1/auth/login"
+
+
+async def register_firm(client: AsyncClient, name: str, email: str) -> dict:
+    """Register a firm and return the parsed response body."""
+    resp = await client.post(
+        _REGISTER_URL,
+        json={
+            "name": name,
+            "admin_user": {"email": email, "password": "SecurePassword123"},
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    return resp.json()
+
+
+async def login(client: AsyncClient, email: str) -> str:
+    """Login and return the raw access token string."""
+    resp = await client.post(
+        _LOGIN_URL,
+        data={"username": email, "password": "SecurePassword123"},
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()["access_token"]
+
+
+@pytest.fixture
+async def firm_a(client: AsyncClient) -> dict:
+    """Registered Firm A with admin user."""
+    return await register_firm(client, "Firm Alpha", "alpha@firm.com")
+
+
+@pytest.fixture
+async def firm_b(client: AsyncClient) -> dict:
+    """Registered Firm B with admin user."""
+    return await register_firm(client, "Firm Beta", "beta@firm.com")
+
+
+@pytest.fixture
+async def token_a(client: AsyncClient, firm_a: dict) -> str:
+    """JWT token for Firm A admin."""
+    return await login(client, "alpha@firm.com")
+
+
+@pytest.fixture
+async def token_b(client: AsyncClient, firm_b: dict) -> str:
+    """JWT token for Firm B admin."""
+    return await login(client, "beta@firm.com")
