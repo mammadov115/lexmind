@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app.database import Base, get_db
+from app.core.database import get_db
 from app.main import app
+from app.models import Base
 
 # Use an in-memory SQLite database for testing
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"

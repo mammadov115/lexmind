@@ -4,9 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
-from app.database import Base, engine
+from app.api.v1.auth import router as auth_router
+from app.core.database import engine
 from app.exceptions import EmailAlreadyExistsError, FirmNameAlreadyExistsError
-from app.routers.auth import router as auth_router
+from app.models import Base
 
 
 @asynccontextmanager

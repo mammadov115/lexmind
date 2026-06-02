@@ -4,8 +4,6 @@ from slugify import slugify
 
 def hash_password(password: str) -> str:
     """Generate a bcrypt hash of the plain password."""
-    # Enforce bcrypt's 72-byte password length limit for safety, if necessary.
-    # We convert the string to bytes first.
     pw_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(pw_bytes, salt)

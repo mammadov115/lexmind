@@ -5,9 +5,8 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
 
-from app.config import settings
+from app.core.config import settings
 
 # Create async engine. For SQLite, need check_same_thread=False
 connect_args = {}
@@ -28,12 +27,6 @@ async_session_factory = async_sessionmaker(
     autocommit=False,
     autoflush=False,
 )
-
-
-class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy database models."""
-
-    pass
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

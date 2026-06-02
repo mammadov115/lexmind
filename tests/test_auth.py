@@ -195,7 +195,7 @@ async def test_registration_transaction_rollback(
 
     # Mock hash_password to fail user registration midway.
     with patch(
-        "app.services.hash_password",
+        "app.services.auth.hash_password",
         side_effect=ValueError("Simulated hashing failure"),
     ):
         with pytest.raises(ValueError, match="Simulated hashing failure"):
