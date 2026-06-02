@@ -36,9 +36,9 @@ class User(Base):
         default=True,
         nullable=False,
     )
-    is_admin: Mapped[bool] = mapped_column(
-        Boolean,
-        default=False,
+    role: Mapped[str] = mapped_column(
+        String(50),
+        default="VIEWER",
         nullable=False,
     )
     firm_id: Mapped[uuid.UUID] = mapped_column(

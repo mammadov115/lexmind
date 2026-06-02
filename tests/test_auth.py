@@ -39,7 +39,7 @@ async def test_register_firm_success(
     # Verify user details
     user_data = data["admin_user"]
     assert user_data["email"] == "admin@acmelaw.com"
-    assert user_data["is_admin"] is True
+    assert user_data["role"] == "ADMIN"
     assert user_data["is_active"] is True
     assert "id" in user_data
     assert "hashed_password" not in user_data

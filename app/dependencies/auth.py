@@ -26,7 +26,7 @@ class CurrentUser:
     id: uuid.UUID
     firm_id: uuid.UUID
     email: str
-    is_admin: bool
+    role: str
     is_active: bool
 
 
@@ -43,6 +43,7 @@ async def get_current_user(
         payload = decode_access_token(token)
         user_id = uuid.UUID(payload["sub"])
         firm_id = uuid.UUID(payload["firm_id"])
+        role = payload.get("role", "VIEWER")
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise _CREDENTIALS_EXCEPTION from None
 
@@ -58,13 +59,37 @@ async def get_current_user(
 
     # Sanity-check: the firm_id in the token must match the DB record.
     # This guards against stale tokens issued before a user was moved.
-    if user.firm_id != firm_id:
+    if user.firm_id != firm_id or user.role != role:
         raise _CREDENTIALS_EXCEPTION
 
     return CurrentUser(
         id=user.id,
         firm_id=user.firm_id,
         email=user.email,
-        is_admin=user.is_admin,
+        role=user.role,
         is_active=user.is_active,
     )
+
+
+def require_admin(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
+    """Dependency to ensure the current user is an Admin."""
+    if current_user.role != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required.",
+        )
+    return current_user
+
+
+def require_lawyer(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> CurrentUser:
+    """Dependency to ensure the current user is an Admin or Lawyer."""
+    if current_user.role not in ("ADMIN", "LAWYER"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Lawyer access required.",
+        )
+    return current_user

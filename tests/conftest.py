@@ -1,4 +1,5 @@
 import asyncio
+import uuid
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -110,22 +111,28 @@ async def login(client: AsyncClient, email: str) -> str:
 @pytest.fixture
 async def firm_a(client: AsyncClient) -> dict:
     """Registered Firm A with admin user."""
-    return await register_firm(client, "Firm Alpha", "alpha@firm.com")
+    uid = uuid.uuid4().hex[:6]
+    return await register_firm(
+        client, f"Firm Alpha {uid}", f"alpha_{uid}@firm.com"
+    )
 
 
 @pytest.fixture
 async def firm_b(client: AsyncClient) -> dict:
     """Registered Firm B with admin user."""
-    return await register_firm(client, "Firm Beta", "beta@firm.com")
+    uid = uuid.uuid4().hex[:6]
+    return await register_firm(
+        client, f"Firm Beta {uid}", f"beta_{uid}@firm.com"
+    )
 
 
 @pytest.fixture
 async def token_a(client: AsyncClient, firm_a: dict) -> str:
     """JWT token for Firm A admin."""
-    return await login(client, "alpha@firm.com")
+    return await login(client, firm_a["admin_user"]["email"])
 
 
 @pytest.fixture
 async def token_b(client: AsyncClient, firm_b: dict) -> str:
     """JWT token for Firm B admin."""
-    return await login(client, "beta@firm.com")
+    return await login(client, firm_b["admin_user"]["email"])

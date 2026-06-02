@@ -1,8 +1,17 @@
 import re
 import uuid
 from datetime import datetime
+from enum import StrEnum
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
+
+
+class UserRole(StrEnum):
+    """Enumeration of available user roles."""
+
+    ADMIN = "ADMIN"
+    LAWYER = "LAWYER"
+    VIEWER = "VIEWER"
 
 
 class UserRegister(BaseModel):
@@ -42,7 +51,7 @@ class UserResponse(BaseModel):
     id: uuid.UUID
     email: EmailStr
     is_active: bool
-    is_admin: bool
+    role: UserRole
     firm_id: uuid.UUID
     created_at: datetime
     updated_at: datetime

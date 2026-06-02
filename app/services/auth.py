@@ -65,7 +65,7 @@ class RegistrationService:
                 email=request.admin_user.email,
                 hashed_password=hashed_pw,
                 is_active=True,
-                is_admin=True,
+                role="ADMIN",
                 firm_id=db_firm.id,
             )
 
@@ -98,4 +98,6 @@ class LoginService:
         if user is None or not verify_password(password, user.hashed_password):
             raise InvalidCredentialsError()
 
-        return create_access_token(subject=user.id, firm_id=user.firm_id)
+        return create_access_token(
+            subject=user.id, firm_id=user.firm_id, role=user.role
+        )

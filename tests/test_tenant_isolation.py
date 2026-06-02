@@ -139,9 +139,11 @@ async def test_cross_tenant_user_isolation(client: AsyncClient) -> None:
     Even with a valid user_id from Firm B, the query returns nothing
     and the endpoint responds with 404.
     """
-    _firm_a = await _register(client, "Firm Alpha", "alpha@alpha.com")
-    firm_b = await _register(client, "Firm Beta", "beta@beta.com")
-    token_a = await _login(client, "alpha@alpha.com")
+    _firm_a = await _register(
+        client, "Isol Firm Alpha", "isol_alpha@alpha.com"
+    )
+    firm_b = await _register(client, "Isol Firm Beta", "isol_beta@beta.com")
+    token_a = await _login(client, "isol_alpha@alpha.com")
 
     firm_b_user_id = firm_b["admin_user"]["id"]
 

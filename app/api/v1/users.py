@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.dependencies.auth import CurrentUser, get_current_user
+from app.dependencies.auth import (
+    CurrentUser,
+    get_current_user,
+    require_admin,
+    require_lawyer,
+)
 from app.repositories.user import TenantUserRepository
 from app.schemas.user import UserResponse
 
@@ -54,3 +59,27 @@ async def get_user(
             detail="User not found.",
         )
     return UserResponse.model_validate(user)
+
+
+@router.post(
+    "",
+    status_code=status.HTTP_201_CREATED,
+    summary="Invite a new user to the firm (Admin only)",
+)
+async def invite_user(
+    current_user: CurrentUser = Depends(require_admin),
+) -> dict[str, str]:
+    """Invite a new user. Only ADMINs can perform this action."""
+    return {"message": "User invited successfully."}
+
+
+@router.post(
+    "/lawyer-only",
+    status_code=status.HTTP_200_OK,
+    summary="A dummy endpoint for Lawyer/Admin only",
+)
+async def lawyer_action(
+    current_user: CurrentUser = Depends(require_lawyer),
+) -> dict[str, str]:
+    """Perform a lawyer action. Only LAWYERs and ADMINs can perform this."""
+    return {"message": "Lawyer action successful."}

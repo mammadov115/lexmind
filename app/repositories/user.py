@@ -35,7 +35,7 @@ class UserRepository:
         email: str,
         hashed_password: str,
         is_active: bool = True,
-        is_admin: bool = False,
+        role: str = "VIEWER",
         firm_id: uuid.UUID,
     ) -> User:
         """Create a new user in database."""
@@ -43,7 +43,7 @@ class UserRepository:
             email=email,
             hashed_password=hashed_password,
             is_active=is_active,
-            is_admin=is_admin,
+            role=role,
             firm_id=firm_id,
         )
         db.add(db_user)

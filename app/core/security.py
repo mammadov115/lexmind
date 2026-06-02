@@ -46,7 +46,9 @@ def slugify_name(name: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def create_access_token(subject: uuid.UUID, firm_id: uuid.UUID) -> str:
+def create_access_token(
+    subject: uuid.UUID, firm_id: uuid.UUID, role: str
+) -> str:
     """Encode a signed JWT with `sub` and `firm_id` claims."""
     expire = utc_now() + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -54,6 +56,7 @@ def create_access_token(subject: uuid.UUID, firm_id: uuid.UUID) -> str:
     payload: dict = {
         "sub": str(subject),
         "firm_id": str(firm_id),
+        "role": role,
         "exp": expire,
     }
     return jwt.encode(
