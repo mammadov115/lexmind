@@ -8,7 +8,10 @@ from app.utils import hash_password, slugify_name
 
 
 async def _generate_unique_slug(db: AsyncSession, name: str) -> str:
-    """Generate a unique slug for the law firm, appending a suffix if conflicts exist."""
+    """Generate a unique slug for the law firm.
+
+    Appends a suffix if conflicts exist.
+    """
     base_slug = slugify_name(name)
     slug = base_slug
     counter = 1
@@ -36,7 +39,9 @@ class RegistrationService:
         """
         try:
             # Validate uniqueness of Email
-            email_stmt = select(User).where(User.email == request.admin_user.email)
+            email_stmt = select(User).where(
+                User.email == request.admin_user.email
+            )
             email_res = await db.execute(email_stmt)
             if email_res.scalar_one_or_none():
                 raise EmailAlreadyExistsError(request.admin_user.email)

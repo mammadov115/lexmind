@@ -1,5 +1,6 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
@@ -25,6 +26,7 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
 
 # Register global exception handlers for domain errors
 @app.exception_handler(EmailAlreadyExistsError)

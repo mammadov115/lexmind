@@ -1,8 +1,13 @@
 import asyncio
 from collections.abc import AsyncGenerator
+
 import pytest
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.database import Base, get_db
 from app.main import app
@@ -39,7 +44,7 @@ async def test_engine():
 
 @pytest.fixture
 async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
-    """Provide an isolated database session for each test, rolling back changes."""
+    """Provide an isolated database session for each test."""
     session_factory = async_sessionmaker(
         bind=test_engine,
         class_=AsyncSession,
@@ -49,13 +54,16 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession, None]:
     )
     async with session_factory() as session:
         yield session
-        # Ensure we roll back transactions after every test to keep tests isolated
+        # Ensure we roll back transactions after every test to keep
+        # tests isolated.
         await session.rollback()
 
 
 @pytest.fixture
-async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Provide an AsyncClient configured with dependency overrides for testing."""
+async def client(
+    db_session: AsyncSession,
+) -> AsyncGenerator[AsyncClient, None]:
+    """Provide an AsyncClient with dependency overrides for testing."""
 
     async def _override_get_db() -> AsyncGenerator[AsyncSession, None]:
         yield db_session

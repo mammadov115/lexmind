@@ -25,4 +25,3 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def slugify_name(name: str) -> str:
     """Convert a name into a URL-friendly, lowercased slug."""
     return slugify(name)
-

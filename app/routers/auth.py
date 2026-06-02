@@ -13,7 +13,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
     response_model=FirmRegisterResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Register a new Law Firm and Admin User",
-    description="Registers a new law firm with a unique name/slug and creates its primary administrator user.",
+    description=(
+        "Registers a new law firm with a unique name/slug "
+        "and creates its primary administrator user."
+    ),
 )
 async def register(
     request: FirmRegisterRequest,

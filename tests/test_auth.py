@@ -1,4 +1,5 @@
 from unittest.mock import patch
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -10,7 +11,9 @@ from app.services import RegistrationService
 
 
 @pytest.mark.asyncio
-async def test_register_firm_success(client: AsyncClient, db_session: AsyncSession) -> None:
+async def test_register_firm_success(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
     """Test successful registration of a Law Firm and its Admin User."""
     payload = {
         "name": "Acme Law Chambers",
@@ -78,7 +81,10 @@ async def test_register_firm_duplicate_email(client: AsyncClient) -> None:
     }
     response2 = await client.post("/api/v1/auth/register", json=payload2)
     assert response2.status_code == 400
-    assert response2.json()["detail"] == "Email 'shared@law.com' is already registered."
+    assert (
+        response2.json()["detail"]
+        == "Email 'shared@law.com' is already registered."
+    )
 
 
 @pytest.mark.asyncio
@@ -103,14 +109,18 @@ async def test_register_firm_duplicate_name(client: AsyncClient) -> None:
     }
     response2 = await client.post("/api/v1/auth/register", json=payload2)
     assert response2.status_code == 400
-    assert response2.json()["detail"] == "Firm name 'Unique Law' is already registered."
+    assert (
+        response2.json()["detail"]
+        == "Firm name 'Unique Law' is already registered."
+    )
 
 
 @pytest.mark.asyncio
-async def test_register_firm_slug_collision(client: AsyncClient, db_session: AsyncSession) -> None:
-    """Test unique slug generation when name is similar but not identical (bypassing name uniqueness).
-
-    e.g., "Apex Law" vs "Apex Law!" which both map to slug "apex-law".
+async def test_register_firm_slug_collision(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Test unique slug generation when name is similar but not identical
+    (bypassing name uniqueness).
     """
     payload1 = {
         "name": "Apex Law",
@@ -123,8 +133,8 @@ async def test_register_firm_slug_collision(client: AsyncClient, db_session: Asy
     assert response1.status_code == 201
     assert response1.json()["firm"]["slug"] == "apex-law"
 
-    # "Apex Law!" will not trigger the unique name check because the names differ.
-    # But it will generate a conflicting slug "apex-law".
+    # "Apex Law!" won't trigger unique name check but generates
+    # a conflicting slug.
     payload2 = {
         "name": "Apex Law!",
         "admin_user": {
@@ -142,12 +152,20 @@ async def test_register_firm_slug_collision(client: AsyncClient, db_session: Asy
     "password,error_msg",
     [
         ("short", "Password must be at least 8 characters long"),
-        ("nouppercase123", "Password must contain at least one uppercase letter"),
-        ("NOLOWERCASE123", "Password must contain at least one lowercase letter"),
+        (
+            "nouppercase123",
+            "Password must contain at least one uppercase letter",
+        ),
+        (
+            "NOLOWERCASE123",
+            "Password must contain at least one lowercase letter",
+        ),
         ("NoDigitsHere", "Password must contain at least one digit"),
     ],
 )
-async def test_register_invalid_password(client: AsyncClient, password: str, error_msg: str) -> None:
+async def test_register_invalid_password(
+    client: AsyncClient, password: str, error_msg: str
+) -> None:
     """Test password strength validation rules in the Pydantic schema."""
     payload = {
         "name": "Invalid Pass Firm",
@@ -163,8 +181,10 @@ async def test_register_invalid_password(client: AsyncClient, password: str, err
 
 
 @pytest.mark.asyncio
-async def test_registration_transaction_rollback(db_session: AsyncSession) -> None:
-    """Test that if user creation fails, the firm creation is rolled back (atomic transaction)."""
+async def test_registration_transaction_rollback(
+    db_session: AsyncSession,
+) -> None:
+    """Test that if user creation fails, firm creation is rolled back."""
     request_data = FirmRegisterRequest(
         name="Rollback Firm",
         admin_user={
@@ -173,13 +193,20 @@ async def test_registration_transaction_rollback(db_session: AsyncSession) -> No
         },
     )
 
-    # Mock hash_password to raise an exception, failing user registration midway
-    with patch("app.services.hash_password", side_effect=ValueError("Simulated hashing failure")):
+    # Mock hash_password to fail user registration midway.
+    with patch(
+        "app.services.hash_password",
+        side_effect=ValueError("Simulated hashing failure"),
+    ):
         with pytest.raises(ValueError, match="Simulated hashing failure"):
-            await RegistrationService.register_law_firm(db_session, request_data)
+            await RegistrationService.register_law_firm(
+                db_session, request_data
+            )
 
     # Check that "Rollback Firm" was NOT created in the database
     stmt = select(Firm).where(Firm.name == "Rollback Firm")
     res = await db_session.execute(stmt)
     firm = res.scalar_one_or_none()
-    assert firm is None, "Firm should not have been created due to transaction rollback."
+    assert firm is None, (
+        "Firm should not have been created due to transaction rollback."
+    )

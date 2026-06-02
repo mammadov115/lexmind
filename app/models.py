@@ -1,5 +1,6 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -8,7 +9,7 @@ from app.database import Base
 
 def utc_now() -> datetime:
     """Helper to return current time in UTC."""
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Firm(Base):
