@@ -1,5 +1,5 @@
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import bcrypt
 import jwt
@@ -47,18 +47,51 @@ def slugify_name(name: str) -> str:
 
 
 def create_access_token(
-    subject: uuid.UUID, firm_id: uuid.UUID, role: str
+    subject: uuid.UUID,
+    firm_id: uuid.UUID,
+    role: str,
+    pwd_at: datetime | None = None,
 ) -> str:
-    """Encode a signed JWT with `sub` and `firm_id` claims."""
+    """Encode a signed JWT with sub, firm_id, role, and pwd_at."""
     expire = utc_now() + timedelta(
         minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
-    payload: dict = {
+
+    payload = {
         "sub": str(subject),
         "firm_id": str(firm_id),
         "role": role,
+        "iat": int(utc_now().timestamp()),
         "exp": expire,
     }
+    if pwd_at:
+        payload["pwd_at"] = int(pwd_at.timestamp())
+
+    return jwt.encode(
+        payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
+
+
+def create_refresh_token(
+    subject: uuid.UUID,
+    firm_id: uuid.UUID,
+    role: str,
+    pwd_at: datetime | None = None,
+) -> str:
+    """Encode a signed JWT refresh token."""
+    expire = utc_now() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    payload = {
+        "sub": str(subject),
+        "firm_id": str(firm_id),
+        "role": role,
+        "type": "refresh",
+        "iat": int(utc_now().timestamp()),
+        "exp": expire,
+    }
+    if pwd_at:
+        payload["pwd_at"] = int(pwd_at.timestamp())
+
     return jwt.encode(
         payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )

@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.schemas import FirmRegisterRequest, FirmRegisterResponse
-from app.schemas.auth import TokenResponse
+from app.schemas.auth import TokenRefreshRequest, TokenResponse
 from app.services.auth import LoginService, RegistrationService
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -44,9 +44,33 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Validate credentials and issue a JWT with firm_id claim."""
-    token = await LoginService.login(
+    access_token, refresh_token = await LoginService.login(
         db,
         email=form_data.username,
         password=form_data.password,
     )
-    return TokenResponse(access_token=token)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )
+
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Obtain a new access token using a refresh token",
+)
+async def refresh_token(
+    request: TokenRefreshRequest,
+    db: AsyncSession = Depends(get_db),
+) -> TokenResponse:
+    """Use a valid refresh token to get a new access token."""
+    access_token, refresh_token = await LoginService.refresh_token(
+        db,
+        token=request.refresh_token,
+    )
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+    )

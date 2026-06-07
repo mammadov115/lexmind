@@ -41,6 +41,12 @@ class User(Base):
         default="VIEWER",
         nullable=False,
     )
+    first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    password_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     firm_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("firms.id", ondelete="CASCADE"),
         nullable=False,

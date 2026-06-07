@@ -45,10 +45,47 @@ class UserRegister(BaseModel):
         return value
 
 
+class UserUpdateProfile(BaseModel):
+    """Schema for updating user profile."""
+
+    first_name: str | None = None
+    last_name: str | None = None
+    email: EmailStr | None = None
+
+
+class UserChangePassword(BaseModel):
+    """Schema for changing password."""
+
+    current_password: str
+    new_password: str = Field(
+        ...,
+        description="Password must meet security requirements.",
+    )
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        if len(value) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        if not re.search(r"[a-z]", value):
+            raise ValueError(
+                "Password must contain at least one lowercase letter."
+            )
+        if not re.search(r"[A-Z]", value):
+            raise ValueError(
+                "Password must contain at least one uppercase letter."
+            )
+        if not re.search(r"\d", value):
+            raise ValueError("Password must contain at least one digit.")
+        return value
+
+
 class UserResponse(BaseModel):
     """Schema for returning user details."""
 
     id: uuid.UUID
+    first_name: str | None = None
+    last_name: str | None = None
     email: EmailStr
     is_active: bool
     role: UserRole

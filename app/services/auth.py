@@ -1,7 +1,12 @@
+import uuid
+
+import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import (
     create_access_token,
+    create_refresh_token,
+    decode_access_token,
     hash_password,
     slugify_name,
     verify_password,
@@ -89,8 +94,8 @@ class LoginService:
         db: AsyncSession,
         email: str,
         password: str,
-    ) -> str:
-        """Validate credentials and return a signed JWT access token.
+    ) -> tuple[str, str]:
+        """Validate credentials and return signed access and refresh tokens.
 
         Raises InvalidCredentialsError if email or password is wrong.
         """
@@ -98,6 +103,54 @@ class LoginService:
         if user is None or not verify_password(password, user.hashed_password):
             raise InvalidCredentialsError()
 
-        return create_access_token(
-            subject=user.id, firm_id=user.firm_id, role=user.role
+        access_token = create_access_token(
+            subject=user.id,
+            firm_id=user.firm_id,
+            role=user.role,
+            pwd_at=user.password_changed_at,
         )
+        refresh_token = create_refresh_token(
+            subject=user.id,
+            firm_id=user.firm_id,
+            role=user.role,
+            pwd_at=user.password_changed_at,
+        )
+        return access_token, refresh_token
+
+    @staticmethod
+    async def refresh_token(
+        db: AsyncSession,
+        token: str,
+    ) -> tuple[str, str]:
+        """Issue new tokens given a valid refresh token."""
+        try:
+            payload = decode_access_token(token)
+            if payload.get("type") != "refresh":
+                raise InvalidCredentialsError()
+            user_id = uuid.UUID(payload["sub"])
+            pwd_at = payload.get("pwd_at")
+        except (jwt.InvalidTokenError, KeyError, ValueError) as e:
+            raise InvalidCredentialsError() from e
+
+        user = await UserRepository.get_by_id(db, user_id)
+        if user is None or not user.is_active:
+            raise InvalidCredentialsError()
+
+        if user.password_changed_at:
+            pw_ts = int(user.password_changed_at.timestamp())
+            if not pwd_at or pwd_at < pw_ts:
+                raise InvalidCredentialsError()
+
+        access_token = create_access_token(
+            subject=user.id,
+            firm_id=user.firm_id,
+            role=user.role,
+            pwd_at=user.password_changed_at,
+        )
+        new_refresh_token = create_refresh_token(
+            subject=user.id,
+            firm_id=user.firm_id,
+            role=user.role,
+            pwd_at=user.password_changed_at,
+        )
+        return access_token, new_refresh_token

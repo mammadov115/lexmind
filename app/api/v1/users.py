@@ -11,7 +11,12 @@ from app.dependencies.auth import (
     require_lawyer,
 )
 from app.repositories.user import TenantUserRepository
-from app.schemas.user import UserResponse
+from app.schemas.user import (
+    UserChangePassword,
+    UserResponse,
+    UserUpdateProfile,
+)
+from app.services.user import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -34,6 +39,56 @@ async def get_me(
             detail="User not found.",
         )
     return UserResponse.model_validate(user)
+
+
+@router.put(
+    "/me",
+    response_model=UserResponse,
+    summary="Update current user's profile",
+)
+async def update_me(
+    update_data: UserUpdateProfile,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserResponse:
+    """Update profile information for the currently authenticated user."""
+    repo = TenantUserRepository(db, current_user.firm_id)
+    user = await repo.get_by_id(current_user.id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    updated_user = await UserService.update_profile(db, user, update_data)
+    return UserResponse.model_validate(updated_user)
+
+
+@router.put(
+    "/me/password",
+    status_code=status.HTTP_200_OK,
+    summary="Change user password",
+)
+async def change_password(
+    password_data: UserChangePassword,
+    current_user: CurrentUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """Change the password for the currently authenticated user.
+
+    Requires the current password to be verified.
+    Invalidates all previously issued tokens.
+    """
+    repo = TenantUserRepository(db, current_user.firm_id)
+    user = await repo.get_by_id(current_user.id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found.",
+        )
+
+    await UserService.change_password(db, user, password_data)
+    return {"message": "Password changed successfully."}
 
 
 @router.get(

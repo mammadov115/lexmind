@@ -41,9 +41,14 @@ async def get_current_user(
     """
     try:
         payload = decode_access_token(token)
+
+        if payload.get("type") == "refresh":
+            raise _CREDENTIALS_EXCEPTION
+
         user_id = uuid.UUID(payload["sub"])
         firm_id = uuid.UUID(payload["firm_id"])
         role = payload.get("role", "VIEWER")
+        pwd_at = payload.get("pwd_at")
     except (jwt.InvalidTokenError, KeyError, ValueError):
         raise _CREDENTIALS_EXCEPTION from None
 
@@ -61,6 +66,11 @@ async def get_current_user(
     # This guards against stale tokens issued before a user was moved.
     if user.firm_id != firm_id or user.role != role:
         raise _CREDENTIALS_EXCEPTION
+
+    # Reject token if password was changed after token was issued
+    if user.password_changed_at:
+        if not pwd_at or pwd_at < int(user.password_changed_at.timestamp()):
+            raise _CREDENTIALS_EXCEPTION
 
     return CurrentUser(
         id=user.id,
